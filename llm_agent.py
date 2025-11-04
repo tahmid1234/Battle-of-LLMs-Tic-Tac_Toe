@@ -2,19 +2,21 @@ from google import genai
 from google.genai import types
 from transformers import  AutoModelForCausalLM, AutoTokenizer
 from transformers import GPT2Tokenizer, GPT2Model
+from huggingface_hub import InferenceClient
 import torch 
 import os
 
 def setup_gemini(api_key):
     client =genai.Client(api_key=api_key)
     return client
-def gemini_move(board,symbol,client):
+def gemini_move(board,symbol,client,helper_prompt):
     prompt = f"""
     You are playing Tic-Tac-Toe as '{symbol}'.
     Current board (index 0-8):
     {board}
     after your opponent's turn
-    Respond with ONLY the index (0-8) where you want to play.
+    Respond with ONLY the index (0-8) that is still not filled with any symbol and which maximize your channce of winning.
+    {helper_prompt}
     """
     response = client.models.generate_content(
         model = "gemini-2.5-flash",
@@ -26,6 +28,36 @@ def gemini_move(board,symbol,client):
     )
 
     return int(response.text)
+
+
+
+def get_hf_model_response(board,symbol,hf_token,helper_prompt):
+    prompt = f"""
+    You are playing Tic-Tac-Toe as '{symbol}'.
+    Current board (index 0-8):
+    {board}
+    after your opponent's turn
+   Respond with ONLY the index (0-8) that is still not filled with any symbol and which maximize your channce of winning.
+   {helper_prompt}
+   Return the index only and nothing else
+    """
+    client = InferenceClient(
+    provider="novita",
+    api_key=hf_token,
+    )
+
+    completion = client.chat.completions.create(
+        model="meta-llama/Llama-3.1-8B-Instruct",
+        messages=[
+        {
+            "role": "user", 
+            "content": prompt
+        }
+        ],
+    )
+    print(completion.choices[0].message," message!!!!")
+    return int(completion.choices[0].message.content)
+
 
 
 def load_local_model(model_name="mistralai/Mistral-7B-Instruct-v0.2"):

@@ -15,9 +15,10 @@ def check_winner(board):
         (0,4,8),(2,4,6)
     ]
     for a,b,c in winning_combos:
+        
         if board[a] == board[b] == board[c] != " ":
             return board[a]
         if " " not in board:
             return "tie"
 
-        return None
+    return None
